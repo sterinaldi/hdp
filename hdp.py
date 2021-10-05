@@ -39,7 +39,7 @@ class HDP:
     '''
     def __init__(self, events,
                        N_bins,
-                       name = ''
+                       name = '',
                        N_draws = 1e4,
                        m_min = None,
                        m_max = None,
