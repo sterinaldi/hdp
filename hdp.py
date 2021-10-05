@@ -39,6 +39,7 @@ class HDP:
     '''
     def __init__(self, events,
                        N_bins,
+                       name = ''
                        N_draws = 1e4,
                        m_min = None,
                        m_max = None,
@@ -49,6 +50,7 @@ class HDP:
                        ):
         
         self.events = events
+        self.name   = name
         self.N_samps_per_ev = np.array([len(ev) for ev in self.events])
         self.N_evs = len(events)
         self.log_N_comb = np.sum([np.log(gamma0 + len(ev)) for ev in events])
@@ -76,7 +78,6 @@ class HDP:
             heights = np.array([c[i] for i in range(1, self.N_bins+1)]) + self.gamma0/self.N_bins
             counts += heights/(self.gamma0 + len(ev))
         self.counts = counts
-        print(counts)
         return
     
     def draw_samples(self):
@@ -84,7 +85,7 @@ class HDP:
         return
     
     def save_samples(self):
-        with open(self.out_folder + '/mf_samples.json', 'w') as f:
+        with open(self.out_folder + '/mf_samples_{0}.json'.format(self.name), 'w') as f:
             json.dump([list(self.bins[:-1]), [list(d) for d in self.draws]], f)
         return
     
@@ -97,7 +98,7 @@ class HDP:
             p[perc] = p[perc]/(np.sum(p[50])*self.binwidth)
             
         names = ['m'] + [str(perc) for perc in self.percentiles]
-        np.savetxt(self.out_folder + '/rec_prob.txt', np.array([self.bins[:-1], p[5], p[16], p[50], p[84], p[95]]).T, header = ' '.join(names))
+        np.savetxt(self.out_folder + '/rec_prob_{0}.txt'.format(self.name), np.array([self.bins[:-1], p[5], p[16], p[50], p[84], p[95]]).T, header = ' '.join(names))
         self.p = p
         return
         
@@ -120,9 +121,9 @@ class HDP:
         
         ax.grid(True,dashes=(1,3))
         ax.legend(loc=0,frameon=False,fontsize=10)
-        fig.savefig(self.out_folder + '/mass_function.pdf', bbox_inches = 'tight')
+        fig.savefig(self.out_folder + '/mass_function_{0}.pdf'.format(self.name), bbox_inches = 'tight')
         ax.set_yscale('log')
-        fig.savefig(self.out_folder + '/log_mass_function.pdf', bbox_inches = 'tight')
+        fig.savefig(self.out_folder + '/log_mass_function_{0}.pdf'.format(self.name), bbox_inches = 'tight')
         return
         
     def run(self):
@@ -142,10 +143,9 @@ if __name__ == '__main__':
     from mf import injected_density
     
     event_files = ['./events/'+f for f in os.listdir('./events/') if not f.startswith('.')]
-#    event_files = ['/Users/stefanorinaldi/Documents/mass_inference/GWTC/events/' + f for f in os.listdir('/Users/stefanorinaldi/Documents/mass_inference/GWTC/events') if not f.startswith('.')]
     events      = []
     for event in event_files:
         events.append(np.genfromtxt(event))
     
-    sampler = HDP(events, 500, injected_mf = injected_density)
+    sampler = HDP(events, 200, injected_mf = injected_density, N_draws = 1e4)
     sampler.run()
