@@ -53,7 +53,7 @@ class HDP:
         self.name   = name
         self.N_samps_per_ev = np.array([len(ev) for ev in self.events])
         self.N_evs = len(events)
-        self.log_N_comb = np.sum([np.log(gamma0 + len(ev)) for ev in events])
+        self.log_N_comb = np.sum([np.log(gamma0 + len(ev)) for ev in self.events])
         self.N_draws = int(N_draws)
         self.N_bins = int(N_bins)
         if m_min is not None:
@@ -73,7 +73,7 @@ class HDP:
     
     def count(self):
         counts = np.zeros(self.N_bins)
-        for ev in events:
+        for ev in self.events:
             c       = Counter(np.digitize(ev, self.bins))
             heights = np.array([c[i] for i in range(1, self.N_bins+1)]) + self.gamma0/self.N_bins
             counts += heights/(self.gamma0 + len(ev))
