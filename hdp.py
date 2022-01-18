@@ -7,6 +7,7 @@ from scipy.stats import dirichlet
 from scipy.special import logsumexp
 from numpy.random import uniform, choice
 from collections import Counter
+from scipy.interpolate import interp1d
 
 rcParams["text.usetex"] = True
 rcParams["font.serif"] = "Computer Modern"
@@ -85,8 +86,10 @@ class HDP:
         return
     
     def save_samples(self):
+        draws = np.log(self.draws)
+        j_dict = {str(m): list(d) for m, d in zip(self.bins[:-1], draws.T)}
         with open(self.out_folder + '/mf_samples_{0}.json'.format(self.name), 'w') as f:
-            json.dump([list(self.bins[:-1]), [list(d) for d in self.draws]], f)
+            json.dump(j_dict, f)
         return
     
     def compute_stats(self):
@@ -98,7 +101,7 @@ class HDP:
             p[perc] = p[perc]/(np.sum(p[50])*self.binwidth)
             
         names = ['m'] + [str(perc) for perc in self.percentiles]
-        np.savetxt(self.out_folder + '/rec_prob_{0}.txt'.format(self.name), np.array([self.bins[:-1], p[5], p[16], p[50], p[84], p[95]]).T, header = ' '.join(names))
+        np.savetxt(self.out_folder + '/log_rec_prob_{0}.txt'.format(self.name), np.array([self.bins[:-1], np.log(p[50]), np.log(p[5]), np.log(p[16]), np.log(p[84]), np.log(p[95])]).T, header = ' '.join(names))
         self.p = p
         return
         
@@ -140,12 +143,15 @@ class HDP:
 
 if __name__ == '__main__':
     
-    from mf import injected_density
+#    from mf import injected_density
+    inj = np.genfromtxt('/Users/stefanorinaldi/Documents/mass_inference/par_est/injected.txt', names = True)
+    injected_density = interp1d(inj['m'], inj['p'], bounds_error = False, fill_value = 0)
+    events_folder = '/Users/stefanorinaldi/Documents/mass_inference/par_est'#'./'
     
-    event_files = ['./events/'+f for f in os.listdir('./events/') if not f.startswith('.')]
+    event_files = [events_folder + '/events/' +f for f in os.listdir(events_folder + '/events/') if not f.startswith('.')]
     events      = []
     for event in event_files:
         events.append(np.genfromtxt(event))
     
-    sampler = HDP(events, 200, injected_mf = injected_density, N_draws = 1e4)
+    sampler = HDP(events, 1000, injected_mf = injected_density, N_draws = 1e3)
     sampler.run()
